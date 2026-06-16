@@ -59,7 +59,7 @@ This is the table of contents. Structure it like:
 ## Key conventions
 - Parse at boundaries: all external input validated into typed structures immediately
 - Structured logging only (no console.log)
-- File size limit: < 300 lines per file
+- File size guideline: aim for < 500 lines per file; when a file grows near this, pause and consider whether parts should become modules, components, helpers, or tests instead of continuing to pile content into one file
 - Every PR must include evidence of behavior (test output, screenshots, traces)
 ```
 
@@ -148,7 +148,7 @@ Create lint rules or structural tests that enforce:
 4. **Taste invariants:**
    - Structured logging only (no `console.log`)
    - Schema naming conventions (e.g., `BillingEventSchema`)
-   - File size limits (< 300 lines)
+   - File size guidelines (aim for < 500 lines; use this as a prompt to consider extracting modules, components, helpers, or tests, not as an absolute rule)
    - Mandatory request tracing in critical flows
 
 Write custom lint error messages that include remediation instructions—these inject fix guidance into agent context.
@@ -191,7 +191,7 @@ When working in a repo that already follows harness engineering:
 6. **Parse at boundaries.** All external data gets parsed into typed structures at entry points.
 7. **Use the task-local runtime.** Reproduce, inspect, and validate behavior in the isolated environment when the change is user-facing or runtime-sensitive.
 8. **Include evidence in PRs.** Test output, screenshots, traces—make reviews objective.
-9. **Keep files under 300 lines.** Split if needed.
+9. **Treat ~500 lines as a design checkpoint, not a hard cap.** When a file approaches it, consider whether modules, components, helpers, or tests would make the work clearer before adding more content.
 10. **Use structured logging.** No `console.log`.
 11. **If you repeat a correction, improve the harness.** Add the missing rule, doc, test, or tool rather than relying on memory.
 
