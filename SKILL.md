@@ -1,7 +1,7 @@
 ---
 name: harness-engineering
 description: "Set up and maintain agent-first repositories using harness engineering principles. Use when bootstrapping a new repo for agent-driven development, adding AGENTS.md / ARCHITECTURE.md / docs structure, enforcing architectural layers, or migrating an existing repo to agent-first workflows."
-version: "1.1.0"
+version: "1.2.0"
 ---
 
 # Harness Engineering
@@ -18,6 +18,7 @@ Set up and work in repositories optimized for agent-first software development. 
 6. **Agent legibility over human aesthetics.** Optimize for what agents can reason about. Prefer boring technology that is composable, stable, and well-represented in training data.
 7. **Fast feedback loops.** Tests, lints, CI, and local runtime checks must run fast enough to be used repeatedly in a single task.
 8. **Progressive disclosure.** Agents start with a small, stable entry point and are taught where to look next.
+9. **Verified reality before target state.** In existing repos, document what is true now before proposing what should be true later. Mark unknowns and aspirations clearly.
 
 ## Failure-to-Harness Loop
 
@@ -30,6 +31,20 @@ Whenever an agent gets stuck, produces the same defect twice, or needs repeated 
 5. Verify the control catches or prevents the observed failure.
 
 The goal is not more instructions. The goal is fewer repeated human interventions.
+
+## Bootstrapping an Existing Repo: Minimum Viable Harness
+
+When adding harness engineering to a repo with little or no structure, first document verified reality. Do not invent idealized commands, architecture, docs, or constraints. Separate current state from target state: if a command, boundary, invariant, or workflow has not been verified, mark it as unknown or proposed.
+
+Start with the smallest harness that helps the next agent work safely:
+
+1. **Inventory the repo.** Read existing README/docs, package or build manifests, CI configuration, test setup, deployment notes, and major directories. Identify current commands, runtime assumptions, environment variables, ports, databases, external services, and obvious ownership or domain boundaries.
+2. **Create a small root `AGENTS.md`.** Include verified commands with working directories, where to start, links to architecture/docs, known safety rules, and what evidence to report after changes. Keep target-state wishes out unless labeled as proposed.
+3. **Create `ARCHITECTURE.md` as a current-state codemap.** Explain what each major area does, observed dependency boundaries, known exceptions, and uncertainty. Do not present aspirational architecture as current architecture.
+4. **Add only useful docs.** Create docs only when they contain real repo-specific guidance. If important harness pieces are missing, track them in `docs/HARNESS_BACKLOG.md` instead of creating empty placeholder files.
+5. **Add one cheap verification loop.** Prefer existing tests, lints, typechecks, builds, or start commands. Add link/file checks if docs are introduced. Add a PR checklist or guidance requiring the agent to report commands run and evidence gathered.
+
+Stop at this point unless the repo has an immediate need for stronger enforcement. Move to custom lint rules, isolated worktrees, observability stacks, and review automation when repeated failures or team velocity justify them.
 
 ## Bootstrapping a New Repo
 
@@ -58,7 +73,7 @@ This is the table of contents. Structure it like:
 
 ## Key conventions
 - Parse at boundaries: all external input validated into typed structures immediately
-- Structured logging only (no console.log)
+- Structured logging in production/runtime code; console output is acceptable in intentional tests, scripts, CLIs, and debugging utilities
 - File size guideline: aim for < 500 lines per file; when a file grows near this, pause and consider whether parts should become modules, components, helpers, or tests instead of continuing to pile content into one file
 - Every PR must include evidence of behavior (test output, screenshots, traces)
 ```
@@ -68,6 +83,8 @@ For monorepos or large subprojects, add nested `AGENTS.md` files only where loca
 ### Step 2: Create ARCHITECTURE.md
 
 A stable, high-level codemap of the codebase. It should answer "where is the thing that does X?" and "what does this area do?" without implementation details.
+
+Use the repo's actual architecture where possible. The layer model below is illustrative; replace it with the project's real dependency model and explicitly document exceptions.
 
 ```markdown
 # Architecture
@@ -124,6 +141,8 @@ docs/
 
 Each index file should list available docs and when to read them.
 
+For existing repos, do not create every file up front. Start with `AGENTS.md`, `ARCHITECTURE.md`, and only docs that contain real repo-specific guidance. Track missing docs, checks, or architecture questions in `docs/HARNESS_BACKLOG.md`.
+
 ### Step 4: Make the app legible and runnable per task
 
 Set up a local task environment an agent can start, inspect, and tear down without colliding with other work:
@@ -133,7 +152,7 @@ Set up a local task environment an agent can start, inspect, and tear down witho
 - **Single start command:** one documented command boots the app and required local services.
 - **Browser/UI access:** for UI products, expose DOM snapshots, screenshots, navigation, and interaction tooling.
 - **Observability access:** expose local logs, metrics, traces, and spans in queryable form.
-- **Runtime acceptance:** define measurable checks such as startup under 800ms, no critical journey span over 2s, or a health endpoint returning a specific payload.
+- **Runtime acceptance:** define repo-specific measurable checks, such as startup under 800ms, no critical journey span over 2s, or a health endpoint returning a specific payload.
 - **Cleanup:** provide a documented teardown command that removes task-local resources.
 
 Agents should be able to reproduce bugs, validate fixes, and gather evidence without a human manually clicking through the app or copying logs.
@@ -146,7 +165,7 @@ Create lint rules or structural tests that enforce:
 2. **Parse at boundaries:** external input must be parsed into typed structures immediately
 3. **Semantic domain types:** prefer `InvoiceId`, `WorkspaceSlug`, `UserId`, or language-appropriate equivalents over raw primitives
 4. **Taste invariants:**
-   - Structured logging only (no `console.log`)
+   - Structured logging in production/runtime code; intentional console output is acceptable in tests, scripts, CLIs, and debugging utilities
    - Schema naming conventions (e.g., `BillingEventSchema`)
    - File size guidelines (aim for < 500 lines; use this as a prompt to consider extracting modules, components, helpers, or tests, not as an absolute rule)
    - Mandatory request tracing in critical flows
@@ -157,7 +176,7 @@ Write custom lint error messages that include remediation instructions—these i
 
 - Format, lint, typecheck, and unit tests must all run fast
 - CI should fail fast with clear, actionable error messages
-- No uncovered lines in new or modified files
+- For existing repos, prefer ratcheted checks: preserve current passing checks, add tests for new or modified critical logic where tooling exists, and document rationale when testing is not yet practical
 - Critical workflows require end-to-end tests
 - Documentation checks should verify that:
   - links resolve
@@ -192,7 +211,7 @@ When working in a repo that already follows harness engineering:
 7. **Use the task-local runtime.** Reproduce, inspect, and validate behavior in the isolated environment when the change is user-facing or runtime-sensitive.
 8. **Include evidence in PRs.** Test output, screenshots, traces—make reviews objective.
 9. **Treat ~500 lines as a design checkpoint, not a hard cap.** When a file approaches it, consider whether modules, components, helpers, or tests would make the work clearer before adding more content.
-10. **Use structured logging.** No `console.log`.
+10. **Use structured logging in production/runtime code.** Console output is acceptable when intentional in tests, scripts, CLIs, and debugging utilities.
 11. **If you repeat a correction, improve the harness.** Add the missing rule, doc, test, or tool rather than relying on memory.
 
 ## Migrating an Existing Repo
